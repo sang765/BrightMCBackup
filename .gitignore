@@ -1,0 +1,386 @@
+# ==============================================================================
+# Minecraft Backup Tool - Comprehensive .gitignore
+# C++ CMake Project with Visual Studio Build Tools & Qt6 Support
+# ==============================================================================
+
+# ---------------------------
+# CMAKE BUILD ARTIFACTS
+# ---------------------------
+# CMake build directories
+build/
+build Debug/
+build Release/
+build RelWithDebInfo/
+build MinSizeRel/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+compile_commands.json
+CMakeUserPresets.json
+
+# ---------------------------
+# VISUAL STUDIO BUILD TOOLS
+# ---------------------------
+# Visual Studio solution and project files
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Visual Studio project files
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# Visual Studio intermediate files
+*.pch
+*.vspscc
+*.vssscc
+.builds
+*.dll
+*.lib
+*.exe
+*.pdb
+*.ilk
+*.log
+*.idb
+*.tmp
+
+# Debug/Release directories
+Debug/
+Release/
+RelWithDebInfo/
+MinSizeRel/
+
+# ---------------------------
+# QT BUILD ARTIFACTS
+# ---------------------------
+# Qt Designer generated files
+*.ui
+*.h
+ui_*.h
+
+# Qt translation files (compiled)
+*.qm
+*.qmlc
+*.jsc
+
+# Qt moc files
+*.moc
+moc_*.cpp
+moc_*.h
+
+# Qt resource compilation
+*.rcc
+qrc_*.cpp
+
+# Qt intermediate files
+*.qmlc.user
+*.pro.user
+*.pro.user.*
+*.qbs.user
+*.qbs.user.*
+
+# ---------------------------
+# ENVIRONMENT FILES
+# ---------------------------
+# Environment variables and local configuration
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+config.local.h
+local_config.h
+
+# User-specific IDE settings
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# ---------------------------
+# CREDENTIALS & SECRETS
+# ---------------------------
+# API keys and credentials (keep template)
+credentials/*.json
+credentials/credentials.json
+credentials/client_secret_*.json
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.json
+secrets.yaml
+
+# ---------------------------
+# DEPENDENCIES & PACKAGES
+# ---------------------------
+# Third-party dependencies (should be handled by package managers)
+vendor/
+deps/
+external/
+third_party/
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# NuGet packages (if mixed .NET projects)
+*.nupkg
+packages/
+*.snupkg
+
+# ---------------------------
+# TEMPORARY FILES
+# ---------------------------
+# Temporary and backup files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*.rej
+*.swp
+*.swo
+*~
+
+# Log files
+*.log
+*.logs
+log/
+logs/
+
+# Cache directories
+.cache/
+*.cache
+
+# ---------------------------
+# OPERATING SYSTEM FILES
+# ---------------------------
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.AppleDouble
+.LSOverride
+Icon
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ---------------------------
+# IDE & EDITOR FILES
+# ---------------------------
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs (IntelliJ, CLion, etc)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+
+# ---------------------------
+# QT & C++ SPECIFIC
+# ---------------------------
+# Qt Creator
+*.pro.user
+*.pro.user.*
+
+# Qt Linguist
+*.ts
+!.ts
+!i18n/*.ts
+
+# QMake
+*.mk
+Makefile*
+
+# ---------------------------
+# DATABASE & CACHE
+# ---------------------------
+# SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Redis dump file
+dump.rdb
+
+# ---------------------------
+# DOCUMENTATION GENERATION
+# ---------------------------
+# Doxygen
+docs/doxygen/html/
+docs/doxygen/latex/
+docs/html/
+docs/latex/
+
+# Sphinx
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# ---------------------------
+# AGENT MODE ARTIFACTS
+# ---------------------------
+# Downloaded dependencies (may be regenerated)
+cmake-*-windows-x86_64/
+cmake-*-linux-x86_64/
+cmake-*-darwin-x86_64/
+
+# Agent mode temporary downloads
+agent_downloads/
+*.zip
+*.tar.gz
+*.tar.bz2
+*.7z
+*.msi
+*.exe
+
+# ---------------------------
+# CLOUD & DEPLOYMENT
+# ---------------------------
+# Cloud service credentials
+.aws/
+.gcp/
+.azure/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Kubernetes
+*.yaml.local
+*.yml.local
+
+# ---------------------------
+# TESTING & COVERAGE
+# ---------------------------
+# Test output
+test_results/
+test-output/
+coverage/
+
+# Code coverage
+*.gcda
+*.gcno
+*.gcov
+coverage.info
+coverage/
+
+# ---------------------------
+# PERFORMANCE PROFILING
+# ---------------------------
+# Profiling data
+*.prof
+*.gmon
+*.trace
+
+# ---------------------------
+# VALIDATION & CHECKS
+# ---------------------------
+# Keep important configuration files
+!CMakeLists.txt
+!*.cmake
+!*.pro
+!*.pro.user.*
+
+# Keep source and header files
+!src/**/*.cpp
+!src/**/*.h
+!src/**/*.hpp
+!src/**/*.cxx
+!src/**/*.hxx
+
+# Keep UI and resource files
+!src/**/*.ui
+!src/**/*.qrc
+!resources/**/*
+
+# Keep documentation
+!README.md
+!*.md
+!docs/**/*
+
+# Keep translation files
+!i18n/**/*
+
+# Keep build and installation scripts
+!install_and_build.bat
+!agent_build_verification.bat
+!*.sh
+!*.ps1
+
+# Keep credential templates
+!credentials/credentials.template.json
+!credentials/*.template.*
+
+# Keep Docker files
+!Dockerfile
+!docker-compose.yml
+
+# ---------------------------
+# SPECIAL EXCEPTIONS
+# ---------------------------
+# Allow some generally excluded files if needed
+!src/main.cpp
+!src/application.cpp
+!CMakeLists.txt
+!install_and_build.bat
+
+# Exception for example/template files
+!*.template
+!examples/
+!templates/
+
+# ---------------------------
+# AGENT MODE SPECIFIC
+# ---------------------------
+# Auto-generated files that can be regenerated
+!build/tools/*.exe
+!build/bin/*
+
+# Temporary agent mode files
+agent_temp/
+autogenerated/
+
+# Generated documentation
+generated_docs/

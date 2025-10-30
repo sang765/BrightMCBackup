@@ -1,0 +1,159 @@
+name: Release Build and Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  release:
+    types: [published]
+
+env:
+  CMAKE_VERSION: "3.26.4"
+
+jobs:
+  # ======================================================================
+  # RELEASE BUILD - WINDOWS
+  # ======================================================================
+  release-windows:
+    name: Release Windows
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Get version from tag
+      id: tag
+      run: |
+        $version = "${{ github.ref_name }}".Substring(1)
+        Write-Host "VERSION=$version" >> $env:GITHUB_OUTPUT
+        Write-Host "Building version: $version"
+    
+    - name: Cache Qt installation
+      uses: actions/cache@v3
+      with:
+        path: |
+          C:\Qt
+          ~\AppData\Local\Qt
+        key: ${{ runner.os }}-Qt-6.2.0-release-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+        restore-keys: |
+          ${{ runner.os }}-Qt-6.2.0-release-
+          ${{ runner.os }}-Qt-6.2.0-
+    
+    - name: Install Qt 6.2.0
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.2.0'
+        modules: "qt6 qt6-base qt6-tools"
+        cache: true
+    
+    - name: Install CMake
+      shell: pwsh
+      run: |
+        $CmakeUrl = "https://cmake.org/files/v$($env:CMAKE_VERSION.Split('.')[0..1] -join '.')/cmake-$env:CMAKE_VERSION-windows-x86_64.zip"
+        Write-Host "Downloading CMake from: $CmakeUrl"
+        Invoke-WebRequest -Uri $CmakeUrl -OutFile "cmake.zip"
+        Expand-Archive "cmake.zip" -DestinationPath "C:\cmake"
+        Add-Content -Path $env:GITHUB_PATH -Value "C:\cmake\cmake-$env:CMAKE_VERSION-windows-x86_64\bin"
+    
+    - name: Configure CMake (Release)
+      shell: pwsh
+      run: |
+        $CmakePath = "C:\cmake\cmake-$env:CMAKE_VERSION-windows-x86_64\bin\cmake.exe"
+        $QtDir = "C:\Qt\6.2.0\msvc2019_64"
+        
+        Write-Host "Configuring Release Build..."
+        mkdir -Force build
+        cd build
+        & $CmakePath .. -G "Visual Studio 17 2022" -A x64 `
+          -DCMAKE_BUILD_TYPE=Release `
+          -DCMAKE_PREFIX_PATH="$QtDir" `
+          -DQt6_DIR="$QtDir\lib\cmake\Qt6" `
+          -DCMAKE_CXX_STANDARD=17
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "CMake configuration failed"
+          exit $LASTEXITCODE
+        }
+    
+    - name: Build Release
+      shell: pwsh
+      run: |
+        $CmakePath = "C:\cmake\cmake-$env:CMAKE_VERSION-windows-x86_64\bin\cmake.exe"
+        cd build
+        & $CmakePath --build . --config Release --parallel
+        
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Release build failed"
+          exit $LASTEXITCODE
+        }
+    
+    - name: Upload Release Assets
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          build/Release/MinecraftBackupTool.exe
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ======================================================================
+  # RELEASE BUILD - LINUX
+  # ======================================================================
+  release-linux:
+    name: Release Linux
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          pkg-config \
+          libgl1-mesa-dev \
+          libssl-dev
+    
+    - name: Install Qt 6.2.0
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.2.0'
+        modules: "qt6 qt6-base qt6-tools"
+        cache: true
+    
+    - name: Configure CMake (Release)
+      run: |
+        echo "Configuring Release Build for Linux..."
+        mkdir -p build
+        cd build
+        cmake .. \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_CXX_STANDARD=17 \
+          -DCMAKE_PREFIX_PATH=~/Qt/6.2.0/gcc_64 \
+          -DQt6_DIR=~/Qt/6.2.0/gcc_64/lib/cmake/Qt6
+    
+    - name: Build Release
+      run: |
+        cd build
+        cmake --build . --config Release --parallel
+        
+    - name: Upload Release Assets
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          build/MinecraftBackupTool
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

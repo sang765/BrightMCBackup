@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1400</width>
+    <height>900</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Minecraft Backup Tool</string>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QSplitter" name="mainSplitter">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+      <widget class="QWidget" name="leftPanel">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QLabel" name="instancesLabel">
+          <property name="text">
+           <string>Minecraft Instances</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QTreeWidget" name="instancesTree">
+          <property name="headerLabel">
+           <string>Instances</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="refreshButton">
+          <property name="text">
+           <string>Refresh</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="rightPanel">
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <widget class="QTabWidget" name="tabWidget">
+          <property name="currentIndex">
+           <number>0</number>
+          </property>
+          <widget class="QWidget" name="backupsTab">
+           <attribute name="title">
+            <string>Backups</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <widget class="QListWidget" name="backupsList"/>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="backupButtonsLayout">
+              <item>
+               <widget class="QPushButton" name="createBackupBtn">
+                <property name="text">
+                 <string>Create Backup</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="restoreBackupBtn">
+                <property name="text">
+                 <string>Restore</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="deleteBackupBtn">
+                <property name="text">
+                 <string>Delete</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="settingsTab">
+           <attribute name="title">
+            <string>Settings</string>
+           </attribute>
+           <layout class="QVBoxLayout" name="verticalLayout_4">
+            <item>
+             <widget class="QGroupBox" name="cloudGroup">
+              <property name="title">
+               <string>Cloud Services</string>
+              </property>
+              <layout class="QVBoxLayout" name="cloudLayout">
+               <item>
+                <widget class="QPushButton" name="configureCloudBtn">
+                 <property name="text">
+                  <string>Configure Cloud</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="syncToCloudBtn">
+                 <property name="text">
+                  <string>Sync to Cloud</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="syncFromCloudBtn">
+                 <property name="text">
+                  <string>Sync from Cloud</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="agentGroup">
+              <property name="title">
+               <string>Agent Mode</string>
+              </property>
+              <layout class="QVBoxLayout" name="agentLayout">
+               <item>
+                <widget class="QCheckBox" name="enableAgentCheck">
+                 <property name="text">
+                  <string>Enable Agent Mode</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="agentStatusLabel">
+                 <property name="text">
+                  <string>Agent Status: Inactive</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="configureScheduleBtn">
+                 <property name="text">
+                  <string>Configure Schedule</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="verticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+        <item>
+         <widget class="QProgressBar" name="progressBar">
+          <property name="visible">
+           <bool>false</bool>
+          </property>
+          <property name="value">
+           <number>0</number>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1400</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="fileMenu">
+    <property name="title">
+     <string>&File</string>
+    </property>
+    <addaction name="exitAction"/>
+   </widget>
+   <widget class="QMenu" name="toolsMenu">
+    <property name="title">
+     <string>&Tools</string>
+    </property>
+    <addaction name="scanAction"/>
+    <addaction name="settingsAction"/>
+   </widget>
+   <widget class="QMenu" name="helpMenu">
+    <property name="title">
+     <string>&Help</string>
+    </property>
+    <addaction name="aboutAction"/>
+   </widget>
+   <addaction name="fileMenu"/>
+   <addaction name="toolsMenu"/>
+   <addaction name="helpMenu"/>
+  </widget>
+  <widget class="QToolBar" name="mainToolBar">
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="exitAction">
+   <property name="text">
+    <string>E&xit</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
+  </action>
+  <action name="scanAction">
+   <property name="text">
+    <string>&Scan Launchers</string>
+   </property>
+  </action>
+  <action name="settingsAction">
+   <property name="text">
+    <string>&Settings</string>
+   </property>
+  </action>
+  <action name="aboutAction">
+   <property name="text">
+    <string>&About</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

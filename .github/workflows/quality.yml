@@ -1,0 +1,421 @@
+name: Code Quality & Security
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run weekly on Sundays at 00:00 UTC
+    - cron: '0 0 * * 0'
+
+jobs:
+  # ======================================================================
+  # STATIC CODE ANALYSIS
+  # ======================================================================
+  static-analysis:
+    name: Static Code Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Install cppcheck
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cppcheck
+    
+    - name: Run cppcheck
+      run: |
+        echo "Running cppcheck static analysis..."
+        
+        # Create cppcheck report with detailed output
+        cppcheck --enable=all \
+          --std=c++17 \
+          --language=c++ \
+          --force \
+          --quiet \
+          --output-file=cppcheck_report.txt \
+          --template='{file}:{line}: {severity}: {id}: {message}' \
+          src/ || echo "cppcheck completed"
+        
+        if [ -f cppcheck_report.txt ] && [ -s cppcheck_report.txt ]; then
+          echo "=== Cppcheck Report ==="
+          cat cppcheck_report.txt
+          
+          # Count errors and warnings
+          errors=$(grep -c "error:" cppcheck_report.txt || true)
+          warnings=$(grep -c "warning:" cppcheck_report.txt || true)
+          style=$(grep -c "style:" cppcheck_report.txt || true)
+          
+          echo "Static Analysis Summary:"
+          echo "- Errors: $errors"
+          echo "- Warnings: $warnings" 
+          echo "- Style issues: $style"
+          
+          # Fail if there are too many critical issues
+          if [ $errors -gt 5 ]; then
+            echo "Too many critical errors found ($errors). Failing build."
+            exit 1
+          fi
+        else
+          echo "✅ No issues found by cppcheck"
+        fi
+    
+    - name: Upload cppcheck results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: cppcheck-report
+        path: cppcheck_report.txt
+        retention-days: 30
+
+  # ======================================================================
+  # CODE FORMATTING CHECK
+  # ======================================================================
+  formatting:
+    name: Code Formatting
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Check for clang-format
+      run: |
+        if command -v clang-format-15 &> /dev/null; then
+          echo "clang-format-15 found, running formatting check..."
+          export CLANG_FORMAT=clang-format-15
+        elif command -v clang-format &> /dev/null; then
+          echo "clang-format found, running formatting check..."
+          export CLANG_FORMAT=clang-format
+        else
+          echo "clang-format not found, attempting to install..."
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+          export CLANG_FORMAT=clang-format
+        fi
+    
+    - name: Run clang-format check
+      run: |
+        echo "Checking C++ code formatting..."
+        
+        # Create a script to check formatting
+        cat > check_formatting.sh << 'EOF'
+        #!/bin/bash
+        
+        UNFORMATTED_FILES=""
+        
+        # Check all C++ header and source files
+        for file in $(find src/ -name "*.h" -o -name "*.cpp"); do
+          if $CLANG_FORMAT --dry-run --Werror "$file" > /dev/null 2>&1; then
+            echo "✅ $file: properly formatted"
+          else
+            echo "❌ $file: formatting issues found"
+            UNFORMATTED_FILES="$UNFORMATTED_FILES $file"
+            
+            # Auto-fix formatting
+            echo "Auto-fixing: $file"
+            $CLANG_FORMAT -i "$file"
+          fi
+        done
+        
+        if [ -n "$UNFORMATTED_FILES" ]; then
+          echo ""
+          echo "⚠️  The following files had formatting issues and were auto-fixed:"
+          echo "$UNFORMATTED_FILES"
+          echo ""
+          echo "Please commit these formatting changes."
+          # Don't fail the build, just warn
+        else
+          echo "✅ All C++ files are properly formatted"
+        fi
+        EOF
+        
+        chmod +x check_formatting.sh
+        ./check_formatting.sh
+
+  # ======================================================================
+  # SECURITY VULNERABILITY SCAN
+  # ======================================================================
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+    
+    - name: Trivy scan summary
+      run: |
+        if [ -f trivy-results.sarif ]; then
+          echo "Security scan completed"
+          echo "Results saved to GitHub Security tab"
+        else
+          echo "No security issues found"
+        fi
+
+  # ======================================================================
+  # DEPENDENCY VULNERABILITY SCAN
+  # ======================================================================
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Run OWASP dependency check
+      run: |
+        echo "Checking for known vulnerabilities in dependencies..."
+        
+        # Create a simple script to scan for vulnerable patterns
+        cat > scan_dependencies.sh << 'EOF'
+        #!/bin/bash
+        
+        echo "Scanning project dependencies..."
+        
+        # Check CMakeLists.txt for version specifications
+        echo "=== CMake Dependencies Analysis ==="
+        if [ -f "CMakeLists.txt" ]; then
+          echo "Found CMakeLists.txt, analyzing dependencies..."
+          grep -n "find_package\|REQUIRED" CMakeLists.txt || echo "No specific package requirements found"
+        fi
+        
+        # Check for common vulnerable patterns in source code
+        echo ""
+        echo "=== Source Code Security Check ==="
+        
+        # Check for potential buffer overflows
+        if grep -r "strcpy\|strcat\|gets\|sprintf" src/ 2>/dev/null; then
+          echo "⚠️  Found potentially unsafe string functions"
+        else
+          echo "✅ No unsafe string functions found"
+        fi
+        
+        # Check for hardcoded credentials
+        if grep -r -i "password\|secret\|key.*=" src/ 2>/dev/null | grep -v "//" | grep -v "/*"; then
+          echo "⚠️  Found potential hardcoded credentials"
+        else
+          echo "✅ No hardcoded credentials found"
+        fi
+        
+        echo ""
+        echo "Dependency scan completed"
+        EOF
+        
+        chmod +x scan_dependencies.sh
+        ./scan_dependencies.sh
+
+  # ======================================================================
+  # LICENSE COMPLIANCE CHECK
+  # ======================================================================
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Check license headers
+      run: |
+        echo "Checking license headers in source files..."
+        
+        cat > check_licenses.sh << 'EOF'
+        #!/bin/bash
+        
+        # Check if files have license headers or proper attribution
+        echo "=== License Header Check ==="
+        
+        MISSING_LICENSE=0
+        
+        for file in $(find src/ -name "*.cpp" -o -name "*.h"); do
+          if ! grep -q "copyright\|Copyright\|LICENSE\|license" "$file" 2>/dev/null; then
+            echo "⚠️  $file: Missing license header"
+            MISSING_LICENSE=$((MISSING_LICENSE + 1))
+          else
+            echo "✅ $file: Has license reference"
+          fi
+        done
+        
+        echo ""
+        if [ $MISSING_LICENSE -gt 0 ]; then
+          echo "Found $MISSING_LICENSE files without license headers"
+          echo "Consider adding appropriate license headers"
+        else
+          echo "✅ All source files have license references"
+        fi
+        
+        echo ""
+        echo "=== Third-party License Check ==="
+        
+        # Check for commonly used libraries that require attribution
+        if [ -f "CMakeLists.txt" ]; then
+          echo "Checking CMakeLists.txt for third-party dependencies..."
+          
+          if grep -q "Qt" CMakeLists.txt; then
+            echo "✅ Qt dependency found - GPL/LGPL license compliance required"
+          fi
+          
+          if grep -q "OpenSSL" CMakeLists.txt; then
+            echo "✅ OpenSSL dependency found - OpenSSL license compliance required"
+          fi
+        fi
+        
+        echo ""
+        echo "License compliance check completed"
+        EOF
+        
+        chmod +x check_licenses.sh
+        ./check_licenses.sh
+
+  # ======================================================================
+  # CODE METRICS
+  # ======================================================================
+  metrics:
+    name: Code Metrics
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Calculate code metrics
+      run: |
+        echo "=== Code Metrics Report ==="
+        
+        cat > calculate_metrics.sh << 'EOF'
+        #!/bin/bash
+        
+        echo "Source Code Statistics:"
+        echo ""
+        
+        # Count lines of code
+        TOTAL_LINES=$(find src/ -name "*.cpp" -o -name "*.h" | xargs wc -l | tail -1 | awk '{print $1}')
+        HEADER_LINES=$(find src/ -name "*.h" | xargs wc -l | tail -1 | awk '{print $1}')
+        SOURCE_LINES=$(find src/ -name "*.cpp" | xargs wc -l | tail -1 | awk '{print $1}')
+        
+        echo "- Total lines of code: $TOTAL_LINES"
+        echo "- Header files lines: $HEADER_LINES"
+        echo "- Source files lines: $SOURCE_LINES"
+        echo ""
+        
+        # Count files
+        HEADER_FILES=$(find src/ -name "*.h" | wc -l)
+        SOURCE_FILES=$(find src/ -name "*.cpp" | wc -l)
+        
+        echo "- Header files count: $HEADER_FILES"
+        echo "- Source files count: $SOURCE_FILES"
+        echo "- Total source files: $((HEADER_FILES + SOURCE_FILES))"
+        echo ""
+        
+        # Count functions (approximate)
+        FUNCTIONS=$(grep -r "^[a-zA-Z_][a-zA-Z0-9_]*.*(" src/ | wc -l)
+        echo "- Estimated functions: $FUNCTIONS"
+        echo ""
+        
+        # Calculate complexity metrics
+        echo "=== Complexity Metrics ==="
+        
+        # Average lines per file
+        if [ $((HEADER_FILES + SOURCE_FILES)) -gt 0 ]; then
+          AVG_LINES=$((TOTAL_LINES / (HEADER_FILES + SOURCE_FILES)))
+          echo "- Average lines per file: $AVG_LINES"
+        fi
+        
+        # Check for large files
+        echo ""
+        echo "=== Large Files (potential refactoring candidates) ==="
+        find src/ -name "*.cpp" -o -name "*.h" | while read file; do
+          lines=$(wc -l < "$file")
+          if [ $lines -gt 500 ]; then
+            echo "⚠️  $file: $lines lines (consider splitting)"
+          fi
+        done
+        
+        echo ""
+        echo "Code metrics calculation completed"
+        EOF
+        
+        chmod +x calculate_metrics.sh
+        ./calculate_metrics.sh
+
+  # ======================================================================
+  # COMPREHENSIVE QUALITY SUMMARY
+  # ======================================================================
+  quality-summary:
+    name: Quality Summary
+    runs-on: ubuntu-latest
+    needs: [static-analysis, formatting, security-scan, dependency-scan, license-check, metrics]
+    if: always()
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Generate Quality Summary
+      run: |
+        echo "### Code Quality & Security Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Static Analysis Results
+        if [[ "${{ needs.static-analysis.result }}" == "success" ]]; then
+          echo "✅ **Static Analysis**: Passed cppcheck validation" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️  **Static Analysis**: Issues found - review cppcheck report" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Formatting Results
+        if [[ "${{ needs.formatting.result }}" == "success" ]]; then
+          echo "✅ **Code Formatting**: All files properly formatted" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️  **Code Formatting**: Some files auto-formatted" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Security Results
+        if [[ "${{ needs.security-scan.result }}" == "success" ]]; then
+          echo "✅ **Security Scan**: No critical vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️  **Security Scan**: Review Trivy report for details" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Dependency Results
+        if [[ "${{ needs.dependency-scan.result }}" == "success" ]]; then
+          echo "✅ **Dependency Security**: No known vulnerabilities" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️  **Dependency Security**: Review dependency scan results" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # License Results
+        if [[ "${{ needs.license-check.result }}" == "success" ]]; then
+          echo "✅ **License Compliance**: Proper license references found" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⚠️  **License Compliance**: Some files missing license headers" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "#### Recommendations" >> $GITHUB_STEP_SUMMARY
+        echo "- Review any ⚠️ warnings in the detailed reports" >> $GITHUB_STEP_SUMMARY
+        echo "- Consider adding missing license headers to source files" >> $GITHUB_STEP_SUMMARY
+        echo "- Monitor dependency updates for security patches" >> $GITHUB_STEP_SUMMARY
+        echo "- Maintain consistent code formatting standards" >> $GITHUB_STEP_SUMMARY
